@@ -3,10 +3,13 @@ import glob
 import shutil
 import logging
 import setuptools
+import importlib
 from pathlib import Path
 from setuptools import setup
 
 logger = logging.getLogger(__name__)
+
+ext_suffix = importlib.machinery.EXTENSION_SUFFIXES[0]
 
 # copy & modify from torch/utils/cpp_extension.py
 def _find_cuda_home():
@@ -35,15 +38,23 @@ else:
     else:
         raise RuntimeError("Could not find CUDA include directory.")
 
+scripts_dir = Path('scripts')
+if scripts_dir.exists():
+    for script in scripts_dir.glob('*'):
+        if not script.name.endswith('.py'):
+            script.chmod(0o755)
+
 setup(
     name='torch_memory_saver',
     version='0.0.5',
     ext_modules=[setuptools.Extension(
-        'torch_memory_saver_cpp',
+        'torch_memory_saver.torch_memory_saver_cpp',
         ['csrc/torch_memory_saver.cpp'],
         include_dirs=include_dirs,
         libraries=['cuda']
     )],
     python_requires=">=3.9",
     packages=['torch_memory_saver'],
+    package_data={'torch_memory_saver': [f'*{ext_suffix}']},
+    scripts=['scripts/tms'],
 )
